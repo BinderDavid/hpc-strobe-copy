@@ -1,0 +1,257 @@
+=======================================================================
+README: hpc-strobe: Hpc-generated strobes for a running Haskell program
+=======================================================================
+
+hpc-strobe is a rudimentary library that demonstrates the possibility of
+using Hpc (Haskell Program Coverage) to inspect the state of a running
+Haskell program. Please refer to
+
+  Andy Gill and Colin Runciman: "Haskell Program Coverage", in
+  Haskell Workshop, ACM Press, 2007
+
+for a description of Hpc. At the time of writing this (2009-May-08),
+the paper is available at
+
+  http://www.ittc.ku.edu/~andygill/papers/Hpc07.pdf
+
+In ordinary use of Hpc, a single so-called tix file is produced at the
+end of a run. The tix file records how many times each expression has
+been used during the run. This can be used to mark up the source code,
+identifying expressions that have not been used.
+
+hpc-strobe uses the basic machinery provided by Hpc to produce multiple
+tix files, also called strobes, representing the coverage at different
+times while the program is running. By subtracting such two tix files,
+again using Hpc machinery, a tix file representing the expressions used
+between the times of recording the subtracted tix files is produced.
+This may be used, for example, to get a better idea of what a
+long-running program is doing. It could also be used as a profiling
+tool, getting information about how many times individual expressions
+are used.
+
+A program is included whose strobe differences produce a crude rendering
+of an analog clock when they are used to mark up the source code using
+Hpc.
+
+Use of the library involves a simple change of the main function and
+also requires the program to be enabled for hpc. At the time of writing,
+this means using a fairly recent version of GHC and compiling the
+Haskell code with the -fhpc option.
+
+In the rest of this README, please find (1) download information; (2)
+build and install information; (3) information on how to run the
+demonstration program and render the analog clock; (4) a bit of
+background information; and (5) some final remarks. Information on how
+to use the library can be found in the haddock documentation which is
+based on comments in src/Trace/Hpc/Strobe.hs in the package.
+
+1. Downloading hpc-strobe
+-------------------------
+
+hpc-strobe is on hackage, so for example:
+
+  $ wget http://hackage.haskell.org/packages/archive/hpc-strobe/0.1/hpc-strobe-0.1.tar.gz
+
+2. Building and installing hpc-strobe
+-------------------------------------
+
+First unpack the package:
+
+  $ tar xvz hpc-strobe-0.1.tar.gz
+
+Then build and install the Cabal way:
+
+  $ cd hpc-strobe-0.1
+  $ runhaskell Setup.hs configure # Additional options may be used
+  $ runhaskell Setup.hs build
+  $ runhaskell Setup.hs haddock # Optional
+  $ runhaskell Setup.hs install # Privileges (sudo) may be needed
+
+For example:
+
+  $ tar xvfz ../../test/hpc/hpc-strobeDarcsRepository/hpc-strobe/dist/hpc-strobe-0.1.tar.gz 
+  hpc-strobe-0.1/
+  hpc-strobe-0.1/demonstration/
+  hpc-strobe-0.1/demonstration/showClock1.sh
+  hpc-strobe-0.1/demonstration/StrobeClock.hs
+  hpc-strobe-0.1/demonstration/strobeHpcDiff1.sh
+  hpc-strobe-0.1/hpc-strobe.cabal
+  hpc-strobe-0.1/LICENSE
+  hpc-strobe-0.1/README
+  hpc-strobe-0.1/Setup.hs
+  hpc-strobe-0.1/src/
+  hpc-strobe-0.1/src/Trace/
+  hpc-strobe-0.1/src/Trace/Hpc/
+  hpc-strobe-0.1/src/Trace/Hpc/Strobe.hs
+  $ cd hpc-strobe-0.1/
+  $ runhaskell Setup.hs configure --user --prefix=/Users/thorkilnaur/tn/install/hpc-strobe-0.1
+  Configuring hpc-strobe-0.1...
+  $ runhaskell Setup.hs build
+  Preprocessing library hpc-strobe-0.1...
+  Building hpc-strobe-0.1...
+  [1 of 1] Compiling Trace.Hpc.Strobe ( src/Trace/Hpc/Strobe.hs, dist/build/Trace/Hpc/Strobe.o )
+  ar: creating archive dist/build/libHShpc-strobe-0.1.a
+  $ runhaskell Setup.hs haddock
+  Preprocessing library hpc-strobe-0.1...
+  Running Haddock for hpc-strobe-0.1...
+  Documentation created: dist/doc/html/hpc-strobe/index.html
+  $ runhaskell Setup.hs install
+  Installing: /Users/thorkilnaur/tn/install/hpc-strobe-0.1/lib/hpc-strobe-0.1/ghc-6.8.2
+  Registering hpc-strobe-0.1...
+  Reading package info from "dist/installed-pkg-config" ... done.
+  Saving old package config file... done.
+  Writing new package config file... done.
+  $ 
+
+3. Running the demonstration program
+------------------------------------
+
+I show how to run he demonstration program in-place in the unpacked
+package directory:
+
+  $ cd demonstration
+  $ ghc --version
+  The Glorious Glasgow Haskell Compilation System, version 6.8.2
+  $ ghc --make StrobeClock.hs -fhpc
+  [1 of 1] Compiling Main             ( StrobeClock.hs, StrobeClock.o )
+  Linking StrobeClock ...
+  $ mkdir tixfiles
+  $ ./StrobeClock tixfiles 
+  StrobeClock(2009-May-08 10.41): Canvas pixel height 39, pixel width 39
+  StrobeClock(2009-May-08 10.41): 634
+  StrobeClock(2009-May-08 10.41): 1266
+  ...
+
+StrobeClock never stops, so at this point, enter a separate shell and
+
+  $ cd hpc-strobe-0.1/demonstration 
+  $ ls -tr tixfiles | tail -n 3
+  StrobeClock_254.tix
+  StrobeClock_255.tix
+  StrobeClock_256.tix
+  $ 
+
+to watch the growing list of strobes.
+
+Note: StrobeClock will not complain if you forget to create the tixfiles
+directory: In that case, no tixfiles will be written. Whether this
+should be considered an error or a feature, I haven't decided.
+
+To produce a single strobe difference, a shell script strobeHpcDiff1.sh
+is provided. For example:
+
+  $ sh strobeHpcDiff1.sh . tixfiles StrobeClock 0 5
+  Writing: Main.hs.html
+  Writing: hpc_index.html
+  Writing: hpc_index_fun.html
+  Writing: hpc_index_alt.html
+  Writing: hpc_index_exp.html
+  strobeHpc_StrobeClock_5_SUB_0_20090508_140251/
+  strobeHpc_StrobeClock_5_SUB_0_20090508_140251/Main.hs.html
+  $ 
+
+This deposits marked-up source code in a time-stamped directory. It
+also produces a .tar.gz file for that directory. Please look at the
+strobeHpcDiff1.sh code itself for usage information.
+
+Now point your browser to the Main.hs.html file in the time-stamped
+directory. On my Mac OS X, I can do
+
+  $ /Applications/Firefox.app/Contents/MacOS/firefox strobeHpc_StrobeClock_5_SUB_0_20090508_140251/Main.hs.html &
+  [1] 23707
+  $ 
+
+but something different may be needed. Now scroll down a few lines in
+this marked-up version of the StrobeClock.hs code to display the canvas
+function. You should be able to make out a crude rendering of an analog
+clock, showing the local time of day. And since we have taken the
+difference over 5 strobes, with 1 second between each, the seconds hand
+on the clock is smeared, covering those 5 seconds.
+
+For a more dynamic experience, with StrobeClock still running:
+
+  $ sh showClock1.sh 
+  showClock1.sh: Skip over tixfiles/StrobeClock_0.tix to tixfiles/StrobeClock_1.tix
+  showClock1.sh: Skip over tixfiles/StrobeClock_1.tix to tixfiles/StrobeClock_2.tix
+  ...
+  showClock1.sh: Skip over tixfiles/StrobeClock_30.tix to tixfiles/StrobeClock_31.tix
+  showClock1.sh: Mark up tixfiles/StrobeClock_31.tix to tixfiles/StrobeClock_32.tix
+  Writing: Main.hs.html
+  Writing: hpc_index.html
+  Writing: hpc_index_fun.html
+  Writing: hpc_index_alt.html
+  Writing: hpc_index_exp.html
+  ...
+
+This creates a directory, ClockDisplay, and maintains in this directory
+a marked-up Main.hs.html that corresponds to the difference between the
+third- and second-latest strobes in the tixfiles directory.
+(showClock1.sh assumes that the tixfiles directory is named "tixfiles"
+and also that the tixfile filename prefix is "StrobeClock".)
+
+Then point your browser to this file, for example (again after entering
+a new shell: showClock1.sh runs forever; also, I need to close the
+other firefox before starting a new one):
+
+  $ cd hpc-strobe-0.1/demonstration 
+  $ /Applications/Firefox.app/Contents/MacOS/firefox ClockDisplay/Main.hs.html &
+  [1] 24813
+  $ 
+
+This will show the most recently marked-up strobe difference, hence the
+current local time will be rendered in the canvas function. Smearing
+may occur, but refreshing the display usually helps.
+
+In addition to PPC Mac OS X 10.4 with GHC 6.8.2, the demonstration has
+been tried successfully on Windows with GHC 6.8.2 with both MSYS and
+Cygwin; and on Ubuntu x86 Linux with GHC 6.10.2.
+
+4. Background
+-------------
+
+The path to using the reflect interface in Hpc started with my desire to
+investigate a long-winding darcs pull (some GHC HEAD into GHC STABLE).
+See http://bugs.darcs.net/issue1075.  Earlier, to investigate the
+HughesPJ pretty-printing library, I had written a simple tracer that did
+a source-to-source transformation of Haskell code, inserting calls to
+Debug.Trace.trace for all top-level definitions in a Haskell module. See
+http://hackage.haskell.org/trac/ghc/ticket/1337. This was at a point in
+time where Hpc was not working. So my initial idea was to do something
+similar to darcs, transforming selected darcs modules to figure out what
+they were doing.
+
+The work started around 2008-Sep-02. After struggling for a while, I
+had settled on a modified version of the Hpc.c that comes with the GHC
+runtime system that wrote out tix files regularly. Immediately
+afterwards, however, I stumbled over the Trace.Hpc.Reflect and
+Trace.Hpc.Tix modules that supported exactly what I needed. Thanks to
+the foresight of Andy Gill and Colin Runciman, everything turned out to
+be surprisingly simple. In fact, a major motivation for publishing the
+present library is simply to make this technique better known. The
+hpc-strobe library itself is really not adding anything significant to
+Hpc itself.
+
+At the Hac5/darcs sprint 2, I gave a brief presentation of the
+technique:
+
+  http://blog.darcs.net/2009/04/darcs-hacking-sprint-2-report.html
+
+Thanks to Don Steward for helping here.
+
+5. Final words
+--------------
+
+As mentioned, the contents of the hpc-strobe library itself is really
+not particularly significant and it is easy to imagine a number of
+generalizations and variations of the technique that opens up what I
+believe is a fairly rich field of valuable applications.
+
+I should mention the hpc-tracer library by Andy Gill and Colin Runciman:
+
+  http://hackage.haskell.org/cgi-bin/hackage-scripts/package/hpc-tracer
+
+I must admit that I have not studied this library in detail, but it
+clearly seems to be headed in much the same direction as hpc-strobe,
+but with a more elaborate user interface.
+
+Thorkil Naur
