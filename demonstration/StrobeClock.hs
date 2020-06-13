@@ -9,11 +9,11 @@
 
 module Main where
 
-  import System
-  import IO
-  import Time
+  import System.Environment (getArgs)
+  import System.IO
+  import System.Time
   import Control.Concurrent
-  import List
+  import Data.List (sort)
 
   import Trace.Hpc.Strobe
 
